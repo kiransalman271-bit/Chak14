@@ -1,9 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT
 
-const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT as string
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { postpath } = req.query
+export default async function handler(req, res) {
+  const postpath = req.query.postpath
   const slugArr = Array.isArray(postpath) ? postpath : [postpath || '']
   const slugPath = slugArr.join('/')
 
@@ -43,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 <meta property="og:description" content="${desc}" />
 <meta property="og:url" content="${redirectUrl}" />
 <meta property="og:type" content="article" />
-${image ? `<meta property="og:image" content="${image}" />` : ''}
+${image ? '<meta property="og:image" content="' + image + '" />' : ''}
 <meta http-equiv="refresh" content="0;url=${redirectUrl}" />
 </head>
 <body><p>Redirecting...</p></body>
