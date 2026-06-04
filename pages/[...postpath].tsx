@@ -11,8 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const isFbBot =
     ua.indexOf('facebookexternalhit') > -1 || ua.indexOf('Facebot') > -1
 
-  const endpoint = GRAPHQL_ENDPOINT
-  const wpBase = endpoint.replace('/graphql/', '').replace('/graphql', '')
+  const wpBase = GRAPHQL_ENDPOINT.replace('/graphql/', '').replace('/graphql', '')
   const redirectUrl = wpBase + '/' + slugPath + '/'
 
   if (!isFbBot) {
@@ -21,27 +20,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const graphRes = await fetch(endpoint, {
+    const graphRes = await fetch(GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query:
-          'query($slug: String!) { postBy(slug: $slug) { title excerpt featuredImage { node { sourceUrl } } } }',
+        query: 'query($slug: String!) { postBy(slug: $slug) { title excerpt featuredImage { node { sourceUrl } } } }',
         variables: { slug: slugPath },
       }),
     })
     const json = await graphRes.json()
     const post = json && json.data ? json.data.postBy : null
-
     const title = post && post.title ? post.title : ''
-    const desc =
-      post && post.excerpt ? post.excerpt.replace(/<[^>]*>/g, '') : ''
-    const image =
-      post && post.featuredImage && post.featuredImage.node
-        ? post.featuredImage.node.sourceUrl
-        : ''
+    const desc = post && post.excerpt ? post.excerpt.replace(/<[^>]*>/g, '') : ''
+    const image = post && post.featuredImage ? post.featuredImage.node.sourceUrl : ''
 
-    const html = `<!DOCTYPE html>
+    res.setHeader('Content-Type', 'text/html')
+    res.status(200).send(`<!DOCTYPE html>
 <html>
 <head>
 <title>${title}</title>
@@ -53,10 +47,7 @@ ${image ? `<meta property="og:image" content="${image}" />` : ''}
 <meta http-equiv="refresh" content="0;url=${redirectUrl}" />
 </head>
 <body><p>Redirecting...</p></body>
-</html>`
-
-    res.setHeader('Content-Type', 'text/html')
-    res.status(200).send(html)
+</html>`)
   } catch (e) {
     res.redirect(307, redirectUrl)
   }
