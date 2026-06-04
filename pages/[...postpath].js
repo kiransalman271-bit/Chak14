@@ -1,6 +1,6 @@
 import Head from 'next/head'
 
-export default function Page({ title, desc, image, redirectUrl }) {
+export default function Page({ title, desc, image, imageWidth, imageHeight, redirectUrl }) {
   return (
     <>
       <Head>
@@ -10,6 +10,11 @@ export default function Page({ title, desc, image, redirectUrl }) {
         <meta property="og:url" content={redirectUrl} />
         <meta property="og:type" content="article" />
         {image ? <meta property="og:image" content={image} /> : null}
+        {image ? <meta property="og:image:secure_url" content={image} /> : null}
+        {imageWidth ? <meta property="og:image:width" content={imageWidth} /> : null}
+        {imageHeight ? <meta property="og:image:height" content={imageHeight} /> : null}
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta name="twitter:card" content="summary_large_image" />
         <meta httpEquiv="refresh" content={'0;url=' + redirectUrl} />
       </Head>
       <p>Redirecting...</p>
@@ -38,24 +43,31 @@ export async function getServerSideProps(context) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query:
-          'query($slug: String!) { postBy(slug: $slug) { title excerpt featuredImage { node { sourceUrl } } } }',
+        query: `query($slug: String!) {
+          postBy(slug: $slug) {
+            title
+            excerpt
+            featuredImage {
+              node {
+                sourceUrl
+                mediaDetails { width height }
+              }
+            }
+          }
+        }`,
         variables: { slug: slugPath },
       }),
     })
     const json = await res.json()
     const post = json && json.data ? json.data.postBy : null
+    const img = post && post.featuredImage ? post.featuredImage.node : null
     return {
       props: {
         title: post && post.title ? post.title : '',
-        desc:
-          post && post.excerpt
-            ? post.excerpt.replace(/<[^>]*>/g, '')
-            : '',
-        image:
-          post && post.featuredImage
-            ? post.featuredImage.node.sourceUrl
-            : '',
+        desc: post && post.excerpt ? post.excerpt.replace(/<[^>]*>/g, '') : '',
+        image: img ? img.sourceUrl : '',
+        imageWidth: img && img.mediaDetails ? String(img.mediaDetails.width) : '1200',
+        imageHeight: img && img.mediaDetails ? String(img.mediaDetails.height) : '630',
         redirectUrl,
       },
     }
